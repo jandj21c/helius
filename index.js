@@ -11,6 +11,7 @@ app.use(bodyParser.json());
 
 // 📌 실시간 가격 조회 (Birdeye)
 async function getTokenPriceUsd(tokenMint) {
+  console.log("⏹️ 가격 조회");
   try {
     const res = await axios.get('https://public-api.birdeye.so/public/price', {
       params: { address: tokenMint },
@@ -46,6 +47,7 @@ async function sendTelegram(text) {
 
 // 📌 Webhook 처리
 app.post('/webhook', async (req, res) => {
+  console.log("⏹️ 알림 발생");
   const data = req.body;
 
   if (data.type !== 'SWAP' || data.source !== 'raydium') {
@@ -76,6 +78,7 @@ app.post('/webhook', async (req, res) => {
 
   // 수량 계산
   const tokenAmount = Number(buy.amount) / Math.pow(10, buy.decimals || 9);
+  console.log(`⏹️ 수량 : ${tokenAmount} `);
 
   // 결제 수단 파악 및 조건 필터
   let paymentText = "";
