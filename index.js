@@ -26,15 +26,15 @@ async function getTokenPriceUsd(tokenMint) {
 
 // ✅ 텔레그램 대신 콘솔로 출력
 async function sendTelegram(text) {
-  console.log("📨 (텔레그램 메시지 전송 대신 로그 출력):\n", text);
-  /* 실제 전송을 원할 경우 아래 코드 주석 해제
+  //console.log("📨 (텔레그램 메시지 전송 대신 로그 출력):\n", text);
+  // 실제 전송을 원할 경우 아래 코드 주석 해제
   const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
   await axios.post(url, {
     chat_id: process.env.TELEGRAM_CHAT_ID,
     text,
     parse_mode: "Markdown"
   });
-  */
+
 }
 
 // ✅ Webhook 수신
@@ -93,8 +93,8 @@ app.post('/webhook', async (req, res) => {
       continue;
     }
 
-    const moonPriceUsd = await getTokenPriceUsd(MY_TOKEN);
-    const totalUsd = tokenAmount * moonPriceUsd;
+    //const moonPriceUsd = await getTokenPriceUsd(MY_TOKEN);
+    //const totalUsd = tokenAmount * moonPriceUsd;
     const emoji = tokenAmount > 10000 ? "🐳" : tokenAmount > 1000 ? "🦈" : "🟢";
     const signature = data.signature;
     const solscanUrl = `https://solscan.io/tx/${signature}`;
@@ -104,11 +104,11 @@ app.post('/webhook', async (req, res) => {
 👤 바이어: \`${buyer.slice(0, 6)}...${buyer.slice(-4)}\`
 🪙 수량: ${emoji} ${tokenAmount.toFixed(2)} MOON
 💵 지불: ${paymentText}
-💲 단가: $${moonPriceUsd.toFixed(6)} / MOON
-💰 총액: $${totalUsd.toFixed(2)} USD
 🕒 시각: ${timestamp}
 🔗 [Solscan에서 보기](${solscanUrl})`;
 
+//💲 단가: $${moonPriceUsd.toFixed(6)} / MOON
+//💰 총액: $${totalUsd.toFixed(2)} USD
     await sendTelegram(msg);
   }
 
