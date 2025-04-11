@@ -66,6 +66,7 @@ app.post('/webhook', async (req, res) => {
 
   if (!buy) return res.sendStatus(200);
   const buyer = buy.destinationOwner;
+  console.log("⏹️ BUY 발생");
 
   const usdcPaid = transfers.find(t =>
     t.tokenSymbol === 'USDC' &&
