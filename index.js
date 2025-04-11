@@ -39,68 +39,68 @@ async function sendTelegram(text) {
 
 // ✅ Webhook 수신
 app.post('/webhook', async (req, res) => {
-  console.log("📦 수신된 Webhook 데이터:", JSON.stringify(req.body, null, 2));
-  const data = req.body;
-  const source = (data.source || '').toLowerCase();
-  const transfers = data.tokenTransfers || [];
-  const natives = data.nativeTransfers || [];
+  const payload = Array.isArray(req.body) ? req.body : [req.body];
 
-  // ✅ raydium, jupiter 이외의 출처는 무시
-  if (!['raydium', 'jupiter'].includes(source)) {
-    return res.sendStatus(200);
-  }
+  console.log("📥 수신된 Webhook 데이터:", JSON.stringify(payload, null, 2));
 
-  // ✅ MOON 토큰 수령 여부 확인 (매수 감지)
-  const buy = transfers.find(t =>
-    t.mint === MY_TOKEN &&
-    t.toUserAccount !== t.fromUserAccount &&
-    Number(t.tokenAmount) > 0
-  );
-  if (!buy) return res.sendStatus(200);
+  for (const data of payload) {
+    const source = (data.source || '').toLowerCase();
+    const transfers = data.tokenTransfers || [];
+    const natives = data.nativeTransfers || [];
 
-  console.log("⏹️ BUY 발생");
+    if (!['raydium', 'jupiter'].includes(source)) {
+      console.log(`⛔ source(${source}) 무시됨`);
+      continue;
+    }
 
-  const buyer = buy.toUserAccount;
-  const tokenAmount = Number(buy.tokenAmount);
+    const buy = transfers.find(t =>
+      t.mint === MY_TOKEN &&
+      t.toUserAccount !== t.fromUserAccount &&
+      Number(t.tokenAmount) > 0
+    );
+    if (!buy) {
+      console.log("🧐 MOON 매수 아님 (toUserAccount 기준) → 무시됨");
+      continue;
+    }
 
-  // ✅ SOL 또는 USDC 지불 여부 감지
-  const usdcPaid = transfers.find(t =>
-    t.tokenSymbol === 'USDC' && t.fromUserAccount === buyer
-  );
+    const buyer = buy.toUserAccount;
+    const tokenAmount = Number(buy.tokenAmount);
 
-  const solPaid = transfers.find(t =>
-    t.mint === 'So11111111111111111111111111111111111111112' &&
-    t.fromUserAccount === buyer
-  );
+    const usdcPaid = transfers.find(t =>
+      t.tokenSymbol === 'USDC' && t.fromUserAccount === buyer
+    );
 
-  // ✅ 최소 결제 조건 확인
-  let passesThreshold = false;
-  let paymentText = '';
+    const solPaid = transfers.find(t =>
+      t.mint === 'So11111111111111111111111111111111111111112' &&
+      t.fromUserAccount === buyer
+    );
 
-  if (usdcPaid) {
-    const usdcAmount = Number(usdcPaid.tokenAmount);
-    paymentText = `${usdcAmount.toFixed(2)} USDC`;
-    passesThreshold = usdcAmount >= 10;
-  } else if (solPaid) {
-    const solAmount = Number(solPaid.tokenAmount);
-    paymentText = `${solAmount.toFixed(4)} SOL`;
-    passesThreshold = solAmount >= 0.1;
-  }
+    let passesThreshold = false;
+    let paymentText = '';
 
-  if (!passesThreshold) {
-    console.log("⏹️ 알림 조건 미달: 소액 거래 무시");
-    return res.sendStatus(200);
-  }
+    if (usdcPaid) {
+      const usdcAmount = Number(usdcPaid.tokenAmount);
+      paymentText = `${usdcAmount.toFixed(2)} USDC`;
+      passesThreshold = usdcAmount >= 10;
+    } else if (solPaid) {
+      const solAmount = Number(solPaid.tokenAmount);
+      paymentText = `${solAmount.toFixed(4)} SOL`;
+      passesThreshold = solAmount >= 0.1;
+    }
 
-  // ✅ 가격 조회 및 메시지 구성
-  const moonPriceUsd = await getTokenPriceUsd(MY_TOKEN);
-  const totalUsd = tokenAmount * moonPriceUsd;
-  const emoji = tokenAmount > 10000 ? "🐳" : tokenAmount > 1000 ? "🦈" : "🟢";
-  const signature = data.signature;
-  const solscanUrl = `https://solscan.io/tx/${signature}`;
-  const timestamp = new Date(data.timestamp * 1000).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+    if (!passesThreshold) {
+      console.log("⏹️ 알림 조건 미달: 소액 거래 무시");
+      continue;
+    }
 
-  const msg = `💰 *${source.toUpperCase()} 매수 발생!*
+    const moonPriceUsd = await getTokenPriceUsd(MY_TOKEN);
+    const totalUsd = tokenAmount * moonPriceUsd;
+    const emoji = tokenAmount > 10000 ? "🐳" : tokenAmount > 1000 ? "🦈" : "🟢";
+    const signature = data.signature;
+    const solscanUrl = `https://solscan.io/tx/${signature}`;
+    const timestamp = new Date(data.timestamp * 1000).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+
+    const msg = `💰 *${source.toUpperCase()} 매수 발생!*
 👤 바이어: \`${buyer.slice(0, 6)}...${buyer.slice(-4)}\`
 🪙 수량: ${emoji} ${tokenAmount.toFixed(2)} MOON
 💵 지불: ${paymentText}
@@ -109,7 +109,9 @@ app.post('/webhook', async (req, res) => {
 🕒 시각: ${timestamp}
 🔗 [Solscan에서 보기](${solscanUrl})`;
 
-  await sendTelegram(msg);
+    await sendTelegram(msg);
+  }
+
   res.sendStatus(200);
 });
 
