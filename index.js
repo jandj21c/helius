@@ -49,6 +49,7 @@ async function sendTelegram(text) {
 app.post('/webhook', async (req, res) => {
   console.log("⏹️ 알림 발생");
   const data = req.body;
+  console.log("📦 수신된 Webhook 데이터:", JSON.stringify(req.body, null, 2));
 
   if (data.type !== 'SWAP' || data.source !== 'raydium') {
     return res.sendStatus(200);
