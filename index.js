@@ -122,7 +122,7 @@ app.post('/webhook', async (req, res) => {
       title = '🐋🐋🐋대왕고래 출현🐋🐋🐋';
     }
     else {
-      imagePath = path.join(__dirname, 'images', 'whale.jpeg.jpg'); // 돌고래
+      imagePath = path.join(__dirname, 'images', 'whale.jpg.jpg'); // 돌고래
       title = 'BUY Detected!';
     }
 
