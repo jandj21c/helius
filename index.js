@@ -2,6 +2,9 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
+const path = require('path');
 const bodyParser = require('body-parser');
 
 const app = express();
@@ -25,15 +28,28 @@ async function getTokenPriceUsd(tokenMint) {
 }
 
 // ✅ 텔레그램 대신 콘솔로 출력
-async function sendTelegram(text) {
+async function sendTelegram(text, imagePath) {
   //console.log("📨 (텔레그램 메시지 전송 대신 로그 출력):\n", text);
   // 실제 전송을 원할 경우 아래 코드 주석 해제
-  const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
-  await axios.post(url, {
-    chat_id: process.env.TELEGRAM_CHAT_ID,
-    text,
-    parse_mode: "Markdown"
-  });
+  //const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+  const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendPhoto`;
+
+  const form = new FormData();
+  //form.append('chat_id', process.env.TELEGRAM_CHAT_ID);
+  form.append('chat_id', 7709221020); //test 1:1
+  form.append('caption', text);
+  form.append('parse_mode', 'Markdown');
+  form.append('photo', fs.createReadStream(imagePath));
+
+  try {
+    const res = await axios.post(url, form, {
+      headers: form.getHeaders()
+    });
+    console.log('✅ 이미지와 함께 메시지 전송 성공:', res.data);
+  } catch (err) {
+    console.error('❌ 전송 실패:', err.response?.data || err.message);
+  }
 
 }
 
@@ -41,7 +57,7 @@ async function sendTelegram(text) {
 app.post('/webhook', async (req, res) => {
   const payload = Array.isArray(req.body) ? req.body : [req.body];
 
-  console.log("📥 수신된 Webhook 데이터:", JSON.stringify(payload, null, 2));
+  //console.log("📥 수신된 Webhook 데이터:", JSON.stringify(payload, null, 2));
 
   for (const data of payload) {
     const source = (data.source || '').toLowerCase();
@@ -85,7 +101,7 @@ app.post('/webhook', async (req, res) => {
     } else if (solPaid) {
       const solAmount = Number(solPaid.tokenAmount);
       paymentText = `${solAmount.toFixed(4)} SOL`;
-      passesThreshold = solAmount >= 0.01;
+      passesThreshold = solAmount >= 0.00001;
     }
 
     if (!passesThreshold) {
@@ -100,16 +116,28 @@ app.post('/webhook', async (req, res) => {
     const solscanUrl = `https://solscan.io/tx/${signature}`;
     const timestamp = new Date(data.timestamp * 1000).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 
-    const msg = `💰 *${source.toUpperCase()} 매수 발생!*
-👤 바이어: \`${buyer.slice(0, 6)}...${buyer.slice(-4)}\`
-🪙 수량: ${emoji} ${tokenAmount.toFixed(2)} MOON
-💵 지불: ${paymentText}
-🕒 시각: ${timestamp}
-🔗 [Solscan에서 보기](${solscanUrl})`;
+    var imagePath;
+    var title;
+    if(Number(solPaid.tokenAmount) > 28) {
+      imagePath = path.join(__dirname, 'images', 'big_whale.jpeg.jpg'); // 대왕고래
+      title = '🐋🐋🐋대왕고래 출현🐋🐋🐋';
+    }
+    else {
+      imagePath = path.join(__dirname, 'images', 'whale.jpeg.jpg'); // 돌고래
+      title = 'BUY Detected!';
+    }
+
+    const msg = `💰 *${source.toUpperCase()} ${title}}*
+👤 Buyer : \`${buyer.slice(0, 6)}...${buyer.slice(-4)}\`
+🪙 Amount: ${emoji} ${tokenAmount.toFixed(2)} MOON
+💵 Payment: ${paymentText}
+🕒 Time: ${timestamp}
+🔗 [View on Solscan](${solscanUrl})`;
 
 //💲 단가: $${moonPriceUsd.toFixed(6)} / MOON
 //💰 총액: $${totalUsd.toFixed(2)} USD
-    await sendTelegram(msg);
+
+    await sendTelegram(msg, imagePath);
   }
 
   res.sendStatus(200);
