@@ -118,11 +118,11 @@ app.post('/webhook', async (req, res) => {
     var imagePath;
     var title;
     if(Number(solPaid.tokenAmount) > 28) {
-      imagePath = path.join(__dirname, 'images', 'big_whale.jpeg.jpg'); // 대왕고래
+      imagePath = path.join(__dirname, 'images', 'big_whale.jpeg'); // 대왕고래
       title = '🐋🐋🐋대왕고래 출현🐋🐋🐋';
     }
     else {
-      imagePath = path.join(__dirname, 'images', 'whale.jpg.jpg'); // 돌고래
+      imagePath = path.join(__dirname, 'images', 'whale.jpg'); // 돌고래
       title = 'BUY Detected!';
     }
 
