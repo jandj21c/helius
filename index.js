@@ -45,7 +45,7 @@ async function sendTelegram(text, imagePath) {
     const res = await axios.post(url, form, {
       headers: form.getHeaders()
     });
-    console.log('✅ 이미지와 함께 메시지 전송 성공:', res.data);
+    console.log('✅ 이미지와 함께 메시지 전송 성공');
   } catch (err) {
     console.error('❌ 전송 실패:', err.response?.data || err.message);
   }
@@ -100,7 +100,7 @@ app.post('/webhook', async (req, res) => {
     } else if (solPaid) {
       const solAmount = Number(solPaid.tokenAmount);
       paymentText = `${solAmount.toFixed(4)} SOL`;
-      passesThreshold = solAmount >= 0.00001;
+      passesThreshold = solAmount >= 0.01;
     }
 
     if (!passesThreshold) {
