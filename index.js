@@ -36,8 +36,7 @@ async function sendTelegram(text, imagePath) {
   const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendPhoto`;
 
   const form = new FormData();
-  //form.append('chat_id', process.env.TELEGRAM_CHAT_ID);
-  form.append('chat_id', 7709221020); //test 1:1
+  form.append('chat_id', process.env.TELEGRAM_CHAT_ID); //test 1:1 7709221020
   form.append('caption', text);
   form.append('parse_mode', 'Markdown');
   form.append('photo', fs.createReadStream(imagePath));
