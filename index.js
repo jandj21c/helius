@@ -127,7 +127,7 @@ app.post('/webhook', async (req, res) => {
       mediaPath = path.join(__dirname, 'images', 'big_whale.jpg');
       title = '🐋🐋🐋대왕고래 출현🐋🐋🐋';
     } else {
-      mediaPath = path.join(__dirname, 'images', 'airdrop.webm');
+      mediaPath = path.join(__dirname, 'images', 'small_whale.jpg');
       title = 'BUY Detected!';
     }
 
