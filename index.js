@@ -27,29 +27,29 @@ async function getTokenPriceUsd(tokenMint) {
   }
 }
 
-// ✅ 텔레그램 대신 콘솔로 출력
-async function sendTelegram(text, imagePath) {
-  //console.log("📨 (텔레그램 메시지 전송 대신 로그 출력):\n", text);
-  // 실제 전송을 원할 경우 아래 코드 주석 해제
-  //const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+// ✅ 텔레그램으로 비디오 또는 이미지 전송
+async function sendTelegram(text, mediaPath) {
+  const ext = path.extname(mediaPath).toLowerCase();
+  const isVideo = ['.mp4', '.mov', '.webm'].includes(ext);
 
-  const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendPhoto`;
+  const url = isVideo
+    ? `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendVideo`
+    : `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendPhoto`;
 
   const form = new FormData();
-  form.append('chat_id', process.env.TELEGRAM_CHAT_ID); //test 1:1 7709221020
+  form.append('chat_id', process.env.TELEGRAM_CHAT_ID);
+  form.append(isVideo ? 'video' : 'photo', fs.createReadStream(mediaPath));
   form.append('caption', text);
   form.append('parse_mode', 'Markdown');
-  form.append('photo', fs.createReadStream(imagePath));
 
   try {
     const res = await axios.post(url, form, {
       headers: form.getHeaders()
     });
-    console.log('✅ 이미지와 함께 메시지 전송 성공');
+    console.log('✅ 미디어와 함께 메시지 전송 성공');
   } catch (err) {
     console.error('❌ 전송 실패:', err.response?.data || err.message);
   }
-
 }
 
 // ✅ Webhook 수신
@@ -61,44 +61,53 @@ app.post('/webhook', async (req, res) => {
   for (const data of payload) {
     const source = (data.source || '').toLowerCase();
     const transfers = data.tokenTransfers || [];
-    const natives = data.nativeTransfers || [];
+    const swap = data.events?.swap;
 
     if (!['raydium', 'jupiter'].includes(source)) {
       console.log(`⛔ source(${source}) 무시됨`);
       continue;
     }
 
-    const buy = transfers.find(t =>
-      t.mint === MY_TOKEN &&
-      t.toUserAccount !== t.fromUserAccount &&
-      Number(t.tokenAmount) > 0
-    );
+    // Jupiter 전용 매수 판별 (tokenOutputs 기준)
+    let buy;
+    if (source === 'jupiter' && swap?.tokenOutputs?.length) {
+      buy = swap.tokenOutputs.find(t => t.mint === MY_TOKEN);
+    } else {
+      // Raydium 또는 fallback 방식
+      buy = transfers.find(t =>
+        t.mint === MY_TOKEN &&
+        t.toUserAccount !== t.fromUserAccount &&
+        Number(t.tokenAmount) > 0
+      );
+    }
+
     if (!buy) {
-      console.log("🧐 MOON 매수 아님 (toUserAccount 기준) → 무시됨");
+      console.log("🧐 MOON 매수 아님 → 무시됨");
       continue;
     }
 
-    const buyer = buy.toUserAccount;
-    const tokenAmount = Number(buy.tokenAmount);
+    const buyer = buy.userAccount || buy.toUserAccount;
+    const tokenAmount = Number(buy.tokenAmount || buy.rawTokenAmount?.tokenAmount / 1e9);
 
-    const usdcPaid = transfers.find(t =>
-      t.tokenSymbol === 'USDC' && t.fromUserAccount === buyer
-    );
+    // 결제 정보 확인 (입력 토큰에서 확인)
+    let solPaid, usdcPaid, solAmount = 0;
+    if (source === 'jupiter' && swap?.tokenInputs?.length) {
+      solPaid = swap.tokenInputs.find(t => t.mint === 'So11111111111111111111111111111111111111112');
+      usdcPaid = swap.tokenInputs.find(t => t.tokenSymbol === 'USDC');
+    } else {
+      solPaid = transfers.find(t => t.mint === 'So11111111111111111111111111111111111111112' && t.fromUserAccount === buyer);
+      usdcPaid = transfers.find(t => t.tokenSymbol === 'USDC' && t.fromUserAccount === buyer);
+    }
 
-    const solPaid = transfers.find(t =>
-      t.mint === 'So11111111111111111111111111111111111111112' &&
-      t.fromUserAccount === buyer
-    );
-
-    let passesThreshold = false;
     let paymentText = '';
+    let passesThreshold = false;
 
     if (usdcPaid) {
-      const usdcAmount = Number(usdcPaid.tokenAmount);
+      const usdcAmount = Number(usdcPaid.tokenAmount || usdcPaid.rawTokenAmount?.tokenAmount / 1e6);
       paymentText = `${usdcAmount.toFixed(2)} USDC`;
       passesThreshold = usdcAmount >= 10;
     } else if (solPaid) {
-      const solAmount = Number(solPaid.tokenAmount);
+      solAmount = Number(solPaid.tokenAmount || solPaid.rawTokenAmount?.tokenAmount / 1e9);
       paymentText = `${solAmount.toFixed(4)} SOL`;
       passesThreshold = solAmount >= 0.00001;
     }
@@ -108,35 +117,29 @@ app.post('/webhook', async (req, res) => {
       continue;
     }
 
-    //const moonPriceUsd = await getTokenPriceUsd(MY_TOKEN);
-    //const totalUsd = tokenAmount * moonPriceUsd;
     const emoji = tokenAmount > 10000 ? "🐳" : tokenAmount > 1000 ? "🦈" : "🟢";
     const signature = data.signature;
     const solscanUrl = `https://solscan.io/tx/${signature}`;
     const timestamp = new Date(data.timestamp * 1000).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 
-    var imagePath;
-    var title;
-    if(Number(solPaid.tokenAmount) > 20) {
-      imagePath = path.join(__dirname, 'images', 'big_whale.jpg'); // 대왕고래
+    let mediaPath;
+    let title;
+    if (solAmount > 0.0001) {
+      mediaPath = path.join(__dirname, 'images', 'big_whale.jpg');
       title = '🐋🐋🐋대왕고래 출현🐋🐋🐋';
-    }
-    else {
-      imagePath = path.join(__dirname, 'images', 'whale.jpg'); // 돌고래
+    } else {
+      mediaPath = path.join(__dirname, 'images', 'whale.jpg');
       title = 'BUY Detected!';
     }
 
-    const msg = `💰 *${source.toUpperCase()} ${title}}*
+    const msg = `💰 *${source.toUpperCase()} ${title}*
 👤 Buyer : \`${buyer.slice(0, 6)}...${buyer.slice(-4)}\`
 🪙 Amount: ${emoji} ${tokenAmount.toFixed(2)} MOON
 💵 Payment: ${paymentText}
 🕒 Time: ${timestamp}
 🔗 [View on Solscan](${solscanUrl})`;
 
-//💲 단가: $${moonPriceUsd.toFixed(6)} / MOON
-//💰 총액: $${totalUsd.toFixed(2)} USD
-
-    await sendTelegram(msg, imagePath);
+    await sendTelegram(msg, mediaPath);
   }
 
   res.sendStatus(200);
