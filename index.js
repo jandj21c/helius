@@ -56,7 +56,7 @@ async function sendTelegram(text, imagePath) {
 app.post('/webhook', async (req, res) => {
   const payload = Array.isArray(req.body) ? req.body : [req.body];
 
-  //console.log("📥 수신된 Webhook 데이터:", JSON.stringify(payload, null, 2));
+  console.log("📥 수신된 Webhook 데이터:", JSON.stringify(payload, null, 2));
 
   for (const data of payload) {
     const source = (data.source || '').toLowerCase();
@@ -100,7 +100,7 @@ app.post('/webhook', async (req, res) => {
     } else if (solPaid) {
       const solAmount = Number(solPaid.tokenAmount);
       paymentText = `${solAmount.toFixed(4)} SOL`;
-      passesThreshold = solAmount >= 0.01;
+      passesThreshold = solAmount >= 0.00001;
     }
 
     if (!passesThreshold) {
