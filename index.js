@@ -64,11 +64,6 @@ app.post('/webhook', async (req, res) => {
     const transfers = data.tokenTransfers || [];
     const swap = data.events?.swap;
 
-    if (!['raydium', 'jupiter'].includes(source)) {
-      console.log(`⛔ source(${source}) 무시됨`);
-      continue;
-    }
-
     let buy;
     if (source === 'jupiter' && swap?.tokenOutputs?.length) {
       buy = swap.tokenOutputs.find(t => t.mint === MY_TOKEN && t.toUserAccount !== MY_LP_POOL_ADDRESS);
