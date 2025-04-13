@@ -10,6 +10,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MY_TOKEN = process.env.YOUR_TOKEN_ADDRESS; // MOON Token Mint
+const MY_LP_POOL_ADDRESS = 'GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL'; // 하드코딩된 LP Pool 주소
 
 app.use(bodyParser.json());
 
@@ -68,15 +69,14 @@ app.post('/webhook', async (req, res) => {
       continue;
     }
 
-    // Jupiter 전용 매수 판별 (tokenOutputs 기준)
     let buy;
     if (source === 'jupiter' && swap?.tokenOutputs?.length) {
-      buy = swap.tokenOutputs.find(t => t.mint === MY_TOKEN);
+      buy = swap.tokenOutputs.find(t => t.mint === MY_TOKEN && t.toUserAccount !== MY_LP_POOL_ADDRESS);
     } else {
-      // Raydium 또는 fallback 방식
       buy = transfers.find(t =>
         t.mint === MY_TOKEN &&
         t.toUserAccount !== t.fromUserAccount &&
+        t.toUserAccount !== MY_LP_POOL_ADDRESS &&
         Number(t.tokenAmount) > 0
       );
     }
@@ -89,7 +89,6 @@ app.post('/webhook', async (req, res) => {
     const buyer = buy.userAccount || buy.toUserAccount;
     const tokenAmount = Number(buy.tokenAmount || buy.rawTokenAmount?.tokenAmount / 1e9);
 
-    // 결제 정보 확인 (입력 토큰에서 확인)
     let solPaid, usdcPaid, solAmount = 0;
     if (source === 'jupiter' && swap?.tokenInputs?.length) {
       solPaid = swap.tokenInputs.find(t => t.mint === 'So11111111111111111111111111111111111111112');
@@ -128,7 +127,7 @@ app.post('/webhook', async (req, res) => {
       mediaPath = path.join(__dirname, 'images', 'big_whale.jpg');
       title = '🐋🐋🐋대왕고래 출현🐋🐋🐋';
     } else {
-      mediaPath = path.join(__dirname, 'images', 'whale.jpg');
+      mediaPath = path.join(__dirname, 'images', 'airdrop.webm');
       title = 'BUY Detected!';
     }
 
