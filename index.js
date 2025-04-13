@@ -108,7 +108,7 @@ app.post('/webhook', async (req, res) => {
     } else if (solPaid) {
       solAmount = Number(solPaid.tokenAmount || solPaid.rawTokenAmount?.tokenAmount / 1e9);
       paymentText = `${solAmount.toFixed(4)} SOL`;
-      passesThreshold = solAmount >= 0.00001;
+      passesThreshold = solAmount >= 0.01;
     }
 
     if (!passesThreshold) {
@@ -123,7 +123,7 @@ app.post('/webhook', async (req, res) => {
 
     let mediaPath;
     let title;
-    if (solAmount > 0.0001) {
+    if (solAmount > 20) {
       mediaPath = path.join(__dirname, 'images', 'big_whale.jpg');
       title = '🐋🐋🐋대왕고래 출현🐋🐋🐋';
     } else {
