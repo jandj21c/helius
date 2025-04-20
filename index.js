@@ -134,6 +134,7 @@ app.post('/webhook', async (req, res) => {
 🕒 Time: ${timestamp}
 🔗 [View on Solscan](${solscanUrl})`;
 
+    console.log("❤️거래 텔레그램에 전송");
     await sendTelegram(msg, mediaPath);
   }
 
