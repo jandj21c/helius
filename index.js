@@ -104,13 +104,17 @@ app.post('/webhook', async (req, res) => {
     } else if (solPaid) {
       solAmount = Number(solPaid.tokenAmount || solPaid.rawTokenAmount?.tokenAmount / 1e9);
       paymentText = `${solAmount.toFixed(4)} SOL`;
-      passesThreshold = solAmount >= 0.3;
+      passesThreshold = solAmount >= 0.00001;
     }
 
     if (!passesThreshold) {
       console.log("⏹️ 알림 조건 미달: 소액 거래 무시");
       continue;
     }
+
+    // 💱 Birdeye를 통한 MOON 현재 시세 (USD 기준)
+    const moonPriceUsd = await getTokenPriceUsd(MY_TOKEN);
+    const totalUsd = tokenAmount * moonPriceUsd;
 
     const emoji = tokenAmount > 10000 ? "🐳" : tokenAmount > 1000 ? "🦈" : "🟢";
     const signature = data.signature;
@@ -131,7 +135,9 @@ app.post('/webhook', async (req, res) => {
 👤 Buyer : \`${buyer.slice(0, 6)}...${buyer.slice(-4)}\`
 🪙 Amount: ${emoji} ${tokenAmount.toFixed(2)} MOON
 💵 Payment: ${paymentText}
-🕒 Time: ${timestamp}
+💲 Price: $${moonPriceUsd.toFixed(6)} / ${buy.tokenSymbol}
+💰 Cap:   $${totalUsd.toFixed(2)} USD
+🕒 Time:  ${timestamp}
 🔗 [View on Solscan](${solscanUrl})`;
 
     console.log("❤️거래 텔레그램에 전송");
@@ -143,5 +149,5 @@ app.post('/webhook', async (req, res) => {
 
 // ✅ 서버 시작
 app.listen(PORT, () => {
-  console.log(`🚀 Webhook 수신 서버 실행 중: http://localhost:${PORT}`);
+  console.log(`🚀 Webhook 수신 서버 실행 중: Port :${PORT}`);
 });
