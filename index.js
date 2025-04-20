@@ -15,10 +15,10 @@ const MY_LP_POOL_ADDRESS = 'GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL'; // �
 app.use(bodyParser.json());
 
 // ✅ Birdeye에서 실시간 가격 조회
-async function getTokenPriceUsd(tokenMint) {
+async function getTokenPriceUsd() {
   try {
     const res = await axios.get('https://public-api.birdeye.so/defi/price', {
-      params: { address: MOON_MINT },
+      params: { address: MY_TOKEN },
       headers: {
         'X-API-KEY': process.env.BIRDEYE_API_KEY || '',
         'accept': 'application/json',
@@ -116,7 +116,7 @@ app.post('/webhook', async (req, res) => {
     }
 
     // 💱 Birdeye를 통한 MOON 현재 시세 (USD 기준)
-    const moonPriceUsd = await getTokenPriceUsd(MY_TOKEN);
+    const moonPriceUsd = await getTokenPriceUsd();
     const totalUsd = tokenAmount * moonPriceUsd;
 
     const emoji = tokenAmount > 10000 ? "🐳" : tokenAmount > 1000 ? "🦈" : "🟢";
