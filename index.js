@@ -57,7 +57,8 @@ async function sendTelegram(text, mediaPath) {
 app.post('/webhook', async (req, res) => {
   const payload = Array.isArray(req.body) ? req.body : [req.body];
 
-  console.log("📥 수신된 Webhook 데이터:", JSON.stringify(payload, null, 2));
+  //console.log("📥 수신된 Webhook 데이터:", JSON.stringify(payload, null, 2));
+  console.log("📥 헬리어스 이벤트 수신");
 
   for (const data of payload) {
     const source = (data.source || '').toLowerCase();
