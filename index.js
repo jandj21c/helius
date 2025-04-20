@@ -137,9 +137,8 @@ app.post('/webhook', async (req, res) => {
     const msg = `💰 *${source.toUpperCase()} ${title}*
 👤 Buyer : \`${buyer.slice(0, 6)}...${buyer.slice(-4)}\`
 🪙 Amount: ${emoji} ${tokenAmount.toFixed(2)} MOON
-💵 Payment: ${paymentText}
-💲 Price: $${moonPriceUsd.toFixed(6)} / ${buy.tokenSymbol}
-💰 Cap:   $${totalUsd.toFixed(2)} USD
+💵 Payment: ${paymentText}, $${totalUsd.toFixed(2)} USD
+💰 Price: $${moonPriceUsd.toFixed(6)}
 🕒 Time:  ${timestamp}
 🔗 [View on Solscan](${solscanUrl})`;
 
