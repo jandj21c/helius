@@ -10,6 +10,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MY_TOKEN = process.env.YOUR_TOKEN_ADDRESS; // MOON Token Mint
+const TRIGGER_ENTITY = process.env.TRIGGER_ENTITY; // MOON Token Mint
 const MY_LP_POOL_ADDRESS = 'GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL'; // 하드코딩된 LP Pool 주소
 
 app.use(bodyParser.json());
@@ -103,11 +104,11 @@ app.post('/webhook', async (req, res) => {
     if (usdcPaid) {
       const usdcAmount = Number(usdcPaid.tokenAmount || usdcPaid.rawTokenAmount?.tokenAmount / 1e6);
       paymentText = `${usdcAmount.toFixed(2)} USDC`;
-      passesThreshold = usdcAmount >= 10;
+      passesThreshold = usdcAmount >= TRIGGER_ENTITY * 170000;
     } else if (solPaid) {
       solAmount = Number(solPaid.tokenAmount || solPaid.rawTokenAmount?.tokenAmount / 1e9);
       paymentText = `${solAmount.toFixed(4)} SOL`;
-      passesThreshold = solAmount >= 0.00001;
+      passesThreshold = solAmount >= TRIGGER_ENTITY;
     }
 
     if (!passesThreshold) {
