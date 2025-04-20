@@ -17,10 +17,13 @@ app.use(bodyParser.json());
 // ✅ Birdeye에서 실시간 가격 조회
 async function getTokenPriceUsd(tokenMint) {
   try {
-    const res = await axios.get('https://public-api.birdeye.so/public/price', {
-      params: { address: tokenMint },
-      headers: { 'X-API-KEY': process.env.BIRDEYE_API_KEY || '' },
-    });
+    const res = await axios.get('https://public-api.birdeye.so/defi/price', {
+      params: { address: MOON_MINT },
+      headers: {
+        'X-API-KEY': process.env.BIRDEYE_API_KEY || '',
+        'accept': 'application/json',
+        'x-chain': 'solana',
+      }});
     return res.data?.data?.value || 0;
   } catch (e) {
     console.error("❌ Birdeye 가격 조회 실패:", e.message);
