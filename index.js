@@ -103,7 +103,7 @@ app.post('/webhook', async (req, res) => {
     } else if (solPaid) {
       solAmount = Number(solPaid.tokenAmount || solPaid.rawTokenAmount?.tokenAmount / 1e9);
       paymentText = `${solAmount.toFixed(4)} SOL`;
-      passesThreshold = solAmount >= 0.01;
+      passesThreshold = solAmount >= 0.3;
     }
 
     if (!passesThreshold) {
